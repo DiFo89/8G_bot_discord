@@ -1,0 +1,119 @@
+{
+    "employee": [
+        {
+            "server_id": 318068624780951553,
+            "pablics": [
+                {
+                    "id": 92876084,
+                    "type": "text"
+                },
+                {
+                    "id": 202708047,
+                    "type": "text"
+                },
+                {
+                    "id": 109290951,
+                    "type": "image"
+                },
+                {
+                    "id": 183803447,
+                    "type": "image"
+                },
+                {
+                    "id": 198229588,
+                    "type": "image"
+                },
+                {
+                    "id": 210666122,
+                    "type": "image"
+                },
+                {
+                    "id": 22751485,
+                    "type": "text"
+                },
+                {
+                    "id": 22751485,
+                    "type": "image"
+                },
+                {
+                    "id": 123,
+                    "type": "text"
+                },
+                {
+                    "id": 123,
+                    "type": "image"
+                },
+                {
+                    "id": 1234,
+                    "type": "text"
+                },
+                {
+                    "id": 1234,
+                    "type": "image"
+                },
+                {
+                    "id": 987,
+                    "type": "text"
+                },
+                {
+                    "id": 987656,
+                    "type": "text"
+                },
+                {
+                    "id": 987656,
+                    "type": "image"
+                }
+            ]
+        },
+        {
+            "server_id": 318068624780951,
+            "pablics": [
+                {
+                    "id": 4234234,
+                    "type": "text"
+                },
+                {
+                    "id": 4234234,
+                    "type": "image"
+                }
+            ]
+        },
+        {
+            "server_id": 393368961942552576,
+            "pablics": [
+                {
+                    "id": 92876084,
+                    "type": "text"
+                },
+                {
+                    "id": 202708047,
+                    "type": "text"
+                },
+                {
+                    "id": 109290951,
+                    "type": "image"
+                },
+                {
+                    "id": 183803447,
+                    "type": "image"
+                },
+                {
+                    "id": 198229588,
+                    "type": "image"
+                },
+                {
+                    "id": 210666122,
+                    "type": "image"
+                },
+                {
+                    "id": 123,
+                    "type": "text"
+                },
+                {
+                    "id": 123,
+                    "type": "image"
+                }
+            ]
+        }
+    ]
+}
