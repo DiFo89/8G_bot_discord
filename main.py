@@ -1,5 +1,6 @@
 import discord
 import vk_api
+import os
 from discord.interactions import Interaction
 from discord.ext import commands
 from discord.ui import View, Button
@@ -7,11 +8,13 @@ from discord.ui import View, Button
 from config import settings, vktoken
 import posting
 import pablics
+import voice_blast
 
 bot = commands.Bot(command_prefix=settings['prefix'], intents=discord.Intents.all())
 
 postingObj = posting.Posting()
 pablicsObj = pablics.Pablics()
+blastingObj = voice_blast.VoiceBlast()
 
 
 class ChannelNameButton(Button):
@@ -87,6 +90,19 @@ async def stop_posting(ctx):
 
 
 @bot.command()
+async def start_voice_blasting(ctx):
+    blastingObj.voice_blast_list.append(ctx.guild)
+    await ctx.send("Начался особый ивент")
+    await blastingObj.voice_blasting(ctx.guild)
+
+
+@bot.command()
+async def stop_voice_blasting(ctx):
+    blastingObj.voice_blast_list.remove(ctx.guild)
+    await ctx.send("Особый ивент закончился")
+
+
+@bot.command()
 async def test(ctx):
     # button = Button(label="Clickme", style=discord.ButtonStyle.secondary,)
     my_view = TestView()
@@ -96,15 +112,32 @@ async def test(ctx):
 
 @bot.command()
 async def add_pablic(ctx, pablic_id, content_type=None):
+    vk_session = vk_api.VkApi(token=vktoken)
+    session_api = vk_session.get_api()
+    try:
+        pablic_info = session_api.groups.getById(group_id=int(pablic_id))
+    except Exception as er:
+        print(f'Error: {str(er)}')
+        await ctx.reply(f'Такого паблика не существует, либо он не доступен')
+        return
     response = pablicsObj.add_pablic(int(pablic_id), ctx.guild.id, content_type)
-    await ctx.reply(f'Добавлено {response} пабликов')
+    if response > 0 and pablic_info[0]['is_closed'] == 0:
+        try:
+            session_api.groups.join(group_id=int(pablic_id))
+        except Exception as er:
+            print(f'Error: {str(er)}')
+    await ctx.reply(f'В {pablic_info[0]["name"]} добавлено {response} типов')
     print(f'add {response}')
 
 
 @bot.command()
 async def del_pablic(ctx, pablic_id, content_type=None):
+    vk_session = vk_api.VkApi(token=vktoken)
+    session_api = vk_session.get_api()
+
+    pablic_info = session_api.groups.getById(group_id=int(pablic_id))
     response = pablicsObj.del_pablic(ctx.guild.id, pablic_id, content_type)
-    await ctx.reply(f'Удалено {response} пабликов')
+    await ctx.reply(f'С {pablic_info[0]["name"]} удалено {response} типов')
     print(f'del {response}')
 
 
@@ -118,6 +151,7 @@ async def show_pablics(ctx):
     session_api = vk_session.get_api()
 
     pablics_info = session_api.groups.getById(group_ids=[pablic['id'] for pablic in response])
+
     pablic_names = [group['name'] for group in pablics_info]
     text_message = "Паблики: \n\n"
     i = 0

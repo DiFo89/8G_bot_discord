@@ -81,7 +81,7 @@ class Pablics:
             json_file = json.load(load_file)
 
         if not self.check_server(json_file, server_id):
-            return 0
+            return 1
 
         '''for server in json_file['employee']:
             if server['server_id'] == server_id:
