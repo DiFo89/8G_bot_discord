@@ -1,6 +1,5 @@
 import discord
 import vk_api
-import os
 from discord.interactions import Interaction
 from discord.ext import commands
 from discord.ui import View, Button
@@ -59,7 +58,7 @@ async def hello(ctx):
 @bot.command(aliases=['хелп', 'помощь'])
 async def helpme(ctx):
     await ctx.send(
-        f'{ctx.message.author.mention} УПРАВЛЕНИЕ ПОСТИНГОМ:\n{settings["prefix"]}start_posting\n{settings["prefix"]}stop_posting\nУПРАВЛЕНИЕ ПАБЛИКАМИ РАССЫЛКИ:\n{settings["prefix"]}add_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}del_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}show_pablics')
+        f'{ctx.message.author.mention} УПРАВЛЕНИЕ ПОСТИНГОМ:\n{settings["prefix"]}start_posting\n{settings["prefix"]}stop_posting\nУПРАВЛЕНИЕ ПАБЛИКАМИ РАССЫЛКИ:\n{settings["prefix"]}add_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}del_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}show_pablics\nУПРАВЛЕНИЕ ВОЙС БЛАСТИНГОМ\n{settings["prefix"]}start_voice_blasting\n{settings["prefix"]}stop_voice_blasting')
 
 
 @bot.command()
@@ -91,15 +90,19 @@ async def stop_posting(ctx):
 
 @bot.command()
 async def start_voice_blasting(ctx):
+    if ctx.guild in blastingObj.voice_blast_list:
+        await ctx.send("На сервере уже есть войс блатинг")
+        return
+
     blastingObj.voice_blast_list.append(ctx.guild)
-    await ctx.send("Начался особый ивент")
+    await ctx.send("Начался войс бластинг")
     await blastingObj.voice_blasting(ctx.guild)
 
 
 @bot.command()
 async def stop_voice_blasting(ctx):
     blastingObj.voice_blast_list.remove(ctx.guild)
-    await ctx.send("Особый ивент закончился")
+    await ctx.send("Войс бластинг закончился")
 
 
 @bot.command()
