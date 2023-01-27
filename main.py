@@ -1,6 +1,5 @@
 import discord
 import vk_api
-from discord.interactions import Interaction
 from discord.ext import commands
 from discord.ui import View, Button
 
@@ -29,11 +28,10 @@ class ChannelNameButton(Button):
                 postingObj.posting_channels.append(self.channel)
                 await interaction.response.send_message(f"На {self.channel.name} начался постинг")
                 await postingObj.posting(self.channel)
-
             else:
                 await interaction.response.send_message(f"На {self.channel.name} уже есть постинг")
         else:
-            await interaction.response.send_message("Вызови свою панель")
+            await interaction.response.send_message(f"{interaction.user.mention}, вызови свою панель")
 
 
 class TestView(View):
@@ -73,7 +71,7 @@ async def start_posting(ctx):
     for mychannel in channel_list:
         button = ChannelNameButton(mychannel.name, mychannel, ctx)
         testview.add_item(button)
-    await ctx.send("На какой канал запустить постинг?", view=testview)
+    await ctx.reply("На какой канал запустить постинг?", view=testview)
 
 
 @bot.command()
@@ -86,23 +84,28 @@ async def stop_posting(ctx):
     for channel in channel_list:
         if channel in postingObj.posting_channels:
             postingObj.posting_channels.remove(channel)
+    ctx.reply(f"Прекратил постинг")
 
 
 @bot.command()
 async def start_voice_blasting(ctx):
     if ctx.guild in blastingObj.voice_blast_list:
-        await ctx.send("На сервере уже есть войс блатинг")
+        await ctx.reply(f"На сервере уже есть войс блатинг")
         return
 
     blastingObj.voice_blast_list.append(ctx.guild)
-    await ctx.send("Начался войс бластинг")
+    await ctx.reply(f"Начался войс бластинг")
     await blastingObj.voice_blasting(ctx.guild)
 
 
 @bot.command()
 async def stop_voice_blasting(ctx):
-    blastingObj.voice_blast_list.remove(ctx.guild)
-    await ctx.send("Войс бластинг закончился")
+    for server in blastingObj.voice_blast_list:
+        if ctx.guild == server:
+            blastingObj.voice_blast_list.remove(ctx.guild)
+            await ctx.reply(f"Войс бластинг закончился")
+            return
+    await ctx.reply(f"На сервере нет войс бластинга")
 
 
 @bot.command()
