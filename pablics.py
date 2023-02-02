@@ -42,7 +42,8 @@ class Pablics:
 
         if content_type is None:
             data = [{"id": pablic_id, "type": "text"}, {"id": pablic_id, "type": "image"}]
-        elif content_type == "text" or content_type == "image":
+            # data = [{"id": pablic_id, "type": "text"}, {"id": pablic_id, "type": "image"}, {"id": pablic_id, "type": "gif"}]
+        elif content_type == "text" or content_type == "image" or content_type == "gif":
             data = [{"id": pablic_id, "type": content_type}]
         else:
             return 0

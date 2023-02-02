@@ -7,6 +7,7 @@ from config import settings, vktoken
 import posting
 import pablics
 import voice_blast
+import sounds
 
 bot = commands.Bot(command_prefix=settings['prefix'], intents=discord.Intents.all())
 
@@ -84,7 +85,7 @@ async def stop_posting(ctx):
     for channel in channel_list:
         if channel in postingObj.posting_channels:
             postingObj.posting_channels.remove(channel)
-    ctx.reply(f"Прекратил постинг")
+    await ctx.reply(f"Постинг прекратился")
 
 
 @bot.command()
@@ -173,6 +174,84 @@ async def show_pablics(ctx):
         text_message += "\t" + pablic_names[i] + "\n"
         i += 1
     await ctx.reply(text_message)
+
+
+@bot.command()
+async def show_sounds(ctx):
+    sound_obj = sounds.Sounds()
+    sound_list = sound_obj.get_sounds(ctx.guild)
+    if sound_list == 0 or len(sound_list) == 0:
+        await ctx.reply('На сервере нет звуков')
+        return
+    text_message = ''
+    for i in range(len(sound_list)):
+        text_message += str(i+1) + " " + sound_list[i] + '\n'
+    await ctx.reply(text_message)
+
+
+@bot.command()
+async def add_sound(ctx):
+    # attachment_message = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.attachments)
+    sound_obj = sounds.Sounds()
+    if len(ctx.message.attachments) <= 0:
+        await ctx.reply('Прикрепи к сообщению с командой файлы')
+        return
+    response = sound_obj.add_sound(ctx.guild, ctx.message.attachments)
+    if len(response) <= 0:
+        await ctx.reply('Ни один файл не добавлен.\nФайл должен быть формата mp3')
+    else:
+        text_message = 'Добавлен(ы):'
+        for i in response:
+            text_message += '\n' + i
+        await ctx.reply(text_message)
+
+
+@bot.command()
+async def del_sound(ctx, name):
+    sound_obj = sounds.Sounds()
+    response = sound_obj.del_sound(ctx.guild, name)
+    text = ''
+    match response:
+        case 0:
+            text = 'Такого звука нет на сервере'
+        case 1:
+            text = f"{name} удален с сервера"
+        case 2:
+            text = "Индекс выходит за пределы"
+
+    await ctx.reply(text)
+
+
+@bot.command()
+async def test_call(ctx):
+    def check(m):
+        return m.author.id == ctx.author.id
+
+    await ctx.send('Привет! Ну, что поиграем?😉. Какое число выпадет?(1-6)🎲')
+
+    try:
+        # Ожидание ответа от пользователя. timeout - время ожидания.
+        answer = await bot.wait_for("message", check=check, timeout=30)
+        #print(answer)
+        print(answer.attachments)
+        answer = answer.content
+    except TimeoutError:
+        # Если время ожидания вышло.
+        return await ctx.send('Время вышло.')
+
+
+    # await ctx.send(f'Ваша ставка: {amount}')
+
+    # Число от 1 до 6
+    '''number = randint(1, 6)
+
+    if re.match(r'[1-6]', answer):
+        if number == int(answer):
+            await ctx.send('Вы угадали!')
+        else:
+            return await ctx.send('Вы не угадали.')
+    else:
+        return await ctx.send('Нужно указать число!')'''
 
 
 @bot.event

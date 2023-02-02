@@ -5,9 +5,6 @@ import os
 from os import walk
 from mutagen.mp3 import MP3
 
-# pathfile = os.path.dirname(__file__)
-# path = os.path.join(pathfile, "sounds", "Tactical Nuke.mp3")
-
 
 class VoiceBlast:
     def __init__(self):
@@ -16,7 +13,7 @@ class VoiceBlast:
     async def voice_blasting(self, guild):
         while True:
 
-            await asyncio.sleep(random.randint(1000, 6000))
+            await asyncio.sleep(random.randint(1000, 12000))
 
             if guild not in self.voice_blast_list:
                 print(f'At {guild.name} voice blacsting has stopped')

@@ -22,9 +22,7 @@ class Posting:
         while True:
             text_pablics = pablicsObj.get_pablics_id_by_type(channel.guild.id, "text")
             image_pablics = pablicsObj.get_pablics_id_by_type(channel.guild.id, "image")
-            # textpablic = "-" + random.choice(self.pablic_id_text)
             textpablic = "-" + random.choice(text_pablics)
-            # imagepablic = "-" + random.choice(self.pablic_id_image)
             imagepablic = "-" + random.choice(image_pablics)
             if channel not in self.posting_channels:
                 print(f'At {channel.guild}/{channel.name} posting has stopped')
@@ -32,7 +30,6 @@ class Posting:
             try:
 
                 poststext = self.session_api.wall.get(owner_id=textpablic, count=100)['items']
-
                 # posts_string = [post['text'] for post in poststext]
                 posts_string = []
                 for post in poststext:
