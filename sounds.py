@@ -21,7 +21,6 @@ class Sounds:
         add_list = []
         path = os.path.join(path_file, "sounds", str(guild.id))
         if not os.path.exists(path):
-            print('да!')
             os.chdir(path_file)
             os.chdir("sounds")
             os.mkdir(str(guild.id))
