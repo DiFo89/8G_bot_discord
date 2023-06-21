@@ -26,7 +26,7 @@ class Pablics:
                 return i['pablics']
         return 0
 
-    def get_pablics_id_by_type(self, server_id: int, content_type):
+    def get_pablics_id_by_type(self, server_id: int, content_type: str) -> list:
         result = []
         with open(path) as load_file:
             json_file = json.load(load_file)
@@ -107,3 +107,8 @@ class Pablics:
         with open(path, "w") as write_file:
             json.dump(json_file, write_file, indent=4, ensure_ascii=False)
         return del_counter
+
+    def is_empty(self, guild_id):
+        text_pablics = self.get_pablics_id_by_type(guild_id, "text")
+        image_pablics = self.get_pablics_id_by_type(guild_id, "image")
+        return len(text_pablics) == 0 or len(image_pablics) == 0

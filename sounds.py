@@ -1,6 +1,10 @@
 import os
+
+import discord
 import requests
+import logging
 from os import walk
+
 
 
 class Sounds:
@@ -16,42 +20,29 @@ class Sounds:
                 return True
         return False
 
-    def add_sound(self, guild, attachments):
+    def add_sound(self, guild: discord.Guild, attachments: list):
         path_file = os.path.dirname(__file__)
         add_list = []
         path = os.path.join(path_file, "sounds", str(guild.id))
+        os.chdir(path_file)
+        os.chdir("sounds")
         if not os.path.exists(path):
-            os.chdir(path_file)
-            os.chdir("sounds")
             os.mkdir(str(guild.id))
-            os.chdir(str(guild.id))
-            for i in attachments:
-                if i.filename.split('.')[1] == 'mp3':
-                    response = requests.get(i.url, stream=True)
-                    if response.status_code == 200:
-                        try:
-                            with open(i.filename, 'wb') as file:
-                                file.write(response.content)
-                            add_list.append(i.filename)
-                        except Exception as er:
-                            print(er)
-        else:
-            os.chdir(path_file)
-            os.chdir("sounds")
-            os.chdir(str(guild.id))
-            for i in attachments:
-                if i.filename.split('.')[1] == 'mp3':
-                    response = requests.get(i.url, stream=True)
-                    if response.status_code == 200:
-                        try:
-                            with open(i.filename, 'wb') as file:
-                                file.write(response.content)
-                            add_list.append(i.filename)
-                        except Exception as er:
-                            print(er)
+        os.chdir(str(guild.id))
+        for i in attachments:
+            data = i.filename.split('.')
+            if data[len(data)-1] == 'mp3':
+                response = requests.get(i.url, stream=True)
+                if response.status_code == 200:
+                    try:
+                        with open(i.filename, 'wb') as file:
+                            file.write(response.content)
+                        add_list.append(i.filename)
+                    except Exception as er:
+                        print(er)
         return add_list
 
-    def del_sound(self, guild, name):
+    def del_sound(self, guild: discord.Guild, name: str):
         path_file = os.path.dirname(__file__)
         path = os.path.join(path_file, "sounds", str(guild.id))
         if not os.path.exists(path):
@@ -76,10 +67,12 @@ class Sounds:
                 os.chdir("sounds")
                 os.chdir(str(guild.id))
                 os.remove(name)
+
                 return 1
+
         return 0
 
-    def get_sounds(self, guild):
+    def get_sounds(self, guild: discord.Guild):
         path_file = os.path.dirname(__file__)
         path = os.path.join(path_file, "sounds", str(guild.id))
         if not os.path.exists(path):

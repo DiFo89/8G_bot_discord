@@ -2,6 +2,8 @@ import discord
 import vk_api
 from discord.ext import commands
 from discord.ui import View, Button
+import random
+import logging
 
 from config import settings, vktoken
 import posting
@@ -9,7 +11,32 @@ import pablics
 import voice_blast
 import sounds
 
-bot = commands.Bot(command_prefix=settings['prefix'], intents=discord.Intents.all())
+sound_logger_name = "sound_manager"
+pablic_logger_name = "pablic_manager"
+
+sound_logger = logging.getLogger(sound_logger_name)
+pablic_logger = logging.getLogger(pablic_logger_name)
+
+sound_logger.setLevel(logging.INFO)
+pablic_logger.setLevel(logging.INFO)
+
+handler1 = logging.FileHandler(f"logs\{sound_logger_name}.log", mode='a')
+handler3 = logging.FileHandler(f"logs\{pablic_logger_name}.log", mode='a')
+handler2 = logging.StreamHandler()
+
+formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
+
+handler1.setFormatter(formatter)
+handler2.setFormatter(formatter)
+handler3.setFormatter(formatter)
+
+sound_logger.addHandler(handler1)
+sound_logger.addHandler(handler2)
+pablic_logger.addHandler(handler3)
+pablic_logger.addHandler(handler2)
+
+bot = commands.Bot(command_prefix=settings['prefix'], intents=discord.Intents.default().all())
+
 
 postingObj = posting.Posting()
 pablicsObj = pablics.Pablics()
@@ -23,16 +50,18 @@ class ChannelNameButton(Button):
         self.ctx = ctx
         super().__init__(label=name, style=discord.ButtonStyle.secondary)
 
-    async def callback(self, interaction):
+    async def callback(self, interaction: discord.Interaction):
         if interaction.user == self.ctx.author:
-            if self.channel not in postingObj.posting_channels:
-                postingObj.posting_channels.append(self.channel)
-                await interaction.response.send_message(f"На {self.channel.name} начался постинг")
+            if pablicsObj.is_empty(interaction.guild.id):
+                await interaction.response.send_message(f"{interaction.user.mention}, на сервере нет пабликов для постинга.")
+                return
+            if not postingObj.contain_channel(self.channel):
+                await interaction.response.send_message(f"{interaction.user.mention}, на {self.channel.name} начался постинг.")
                 await postingObj.posting(self.channel)
             else:
-                await interaction.response.send_message(f"На {self.channel.name} уже есть постинг")
+                await interaction.response.send_message(f"{interaction.user.mention}, на {self.channel.name} уже есть постинг.")
         else:
-            await interaction.response.send_message(f"{interaction.user.mention}, вызови свою панель")
+            await interaction.response.send_message(f"{interaction.user.mention}, вызови свою панель.")
 
 
 class TestView(View):
@@ -57,34 +86,27 @@ async def hello(ctx):
 @bot.command(aliases=['хелп', 'помощь'])
 async def helpme(ctx):
     await ctx.send(
-        f'{ctx.message.author.mention} УПРАВЛЕНИЕ ПОСТИНГОМ:\n{settings["prefix"]}start_posting\n{settings["prefix"]}stop_posting\nУПРАВЛЕНИЕ ПАБЛИКАМИ РАССЫЛКИ:\n{settings["prefix"]}add_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}del_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}show_pablics\nУПРАВЛЕНИЕ ВОЙС БЛАСТИНГОМ\n{settings["prefix"]}start_voice_blasting\n{settings["prefix"]}stop_voice_blasting')
+        f'{ctx.message.author.mention} УПРАВЛЕНИЕ ПОСТИНГОМ:\n{settings["prefix"]}start_posting\n{settings["prefix"]}stop_posting\nУПРАВЛЕНИЕ ПАБЛИКАМИ РАССЫЛКИ:\n{settings["prefix"]}add_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}del_pablic <<id паблика>> <<тип контента(text или image)>>\n{settings["prefix"]}show_pablics\nУПРАВЛЕНИЕ ВОЙС БЛАСТИНГОМ\n{settings["prefix"]}start_voice_blasting\n{settings["prefix"]}stop_voice_blasting\nУПРАВЛЕНИЕ ЗВУКАМИ ДЛЯ ВОЙС БЛАСТИНГА\n{settings["prefix"]}add_sound\n{settings["prefix"]}del_sound <<индекс в списке или название>>\n{settings["prefix"]}show_sounds')
 
 
 @bot.command()
 async def start_posting(ctx):
     server_id = ctx.message.guild.id
-    channel_list = []
+    testview = View(timeout=None)
     for channel in bot.get_guild(server_id).channels:
         if channel.type == discord.ChannelType.text:
-            channel_list.append(channel)
-
-    testview = View(timeout=None)
-    for mychannel in channel_list:
-        button = ChannelNameButton(mychannel.name, mychannel, ctx)
-        testview.add_item(button)
+            testview.add_item(ChannelNameButton(channel.name, channel, ctx))
     await ctx.reply("На какой канал запустить постинг?", view=testview)
 
 
 @bot.command()
 async def stop_posting(ctx):
     server_id = ctx.message.guild.id
-    channel_list = []
-    for channel in bot.get_guild(server_id).channels:
+    '''for channel in bot.get_guild(server_id).channels:
         if channel.type == discord.ChannelType.text:
-            channel_list.append(channel)
-    for channel in channel_list:
-        if channel in postingObj.posting_channels:
-            postingObj.posting_channels.remove(channel)
+
+            postingObj.posting_channels.remove(channel)'''
+    postingObj.del_channel_by_guild_id(server_id)
     await ctx.reply(f"Постинг прекратился")
 
 
@@ -97,6 +119,35 @@ async def start_voice_blasting(ctx):
     blastingObj.voice_blast_list.append(ctx.guild)
     await ctx.reply(f"Начался войс бластинг")
     await blastingObj.voice_blasting(ctx.guild)
+
+
+'''@bot.command()
+async def join(ctx: discord.ext.commands.context.Context):
+    if not ctx.message.author.voice:
+        await ctx.send("{} is not connected to a voice channel".format(ctx.message.author.name))
+        return
+    else:
+        channel = ctx.message.author.voice.channel
+    await channel.connect()
+
+
+@bot.command()
+async def leave(ctx: discord.ext.commands.context.Context):
+    voice_client = ctx.message.guild.voice_client
+    print(ctx.guild.voice_client.client)
+    await voice_client.disconnect()
+
+
+@bot.command()
+async def play(ctx):
+    try:
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+        voice_channel.play(discord.FFmpegPCMAudio(
+            source="D:\creativity\works\programming\8G_bot_discord\sounds\standart\Kunteynir - Блёвбургер.mp3"))
+    except:
+        await ctx.send("The bot is not connected to a voice channel.")
+'''
 
 
 @bot.command()
@@ -118,38 +169,46 @@ async def test(ctx):
 
 
 @bot.command()
-async def add_pablic(ctx, pablic_id, content_type=None):
+async def add_pablic(ctx: discord.ext.commands.context.Context, pablic_id, content_type=None):
     vk_session = vk_api.VkApi(token=vktoken)
     session_api = vk_session.get_api()
     try:
         pablic_info = session_api.groups.getById(group_id=int(pablic_id))
     except Exception as er:
-        print(f'Error: {str(er)}')
-        await ctx.reply(f'Такого паблика не существует, либо он не доступен')
+        pablic_logger.exception(f"Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): не удалось найти паблик ({pablic_id})")
+        await ctx.reply(f'Такого паблика не существует, либо он недоступен')
         return
     response = pablicsObj.add_pablic(int(pablic_id), ctx.guild.id, content_type)
-    if response > 0 and pablic_info[0]['is_closed'] == 0:
+    if response == 0:
+        await ctx.reply(f'В {pablic_info[0]["name"]} уже есть этот тип (типы) рассылки')
+        pablic_logger.info(
+            f"Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): введенные типы уже существуют")
+        return
+    text = ''
+    if pablic_info[0]['is_closed'] == 1:
         try:
             session_api.groups.join(group_id=int(pablic_id))
+            text += 'Паблик закрыт - подана заявка на вступление\n'
         except Exception as er:
-            print(f'Error: {str(er)}')
-    await ctx.reply(f'В {pablic_info[0]["name"]} добавлено {response} типов')
-    print(f'add {response}')
+            text += 'Паблик закрыт и не удается подать заявку\n'
+            pablic_logger.exception(f"Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): не удалось подать заявку на {pablic_info[0]['name']} ({pablic_id})")
+    await ctx.reply(text + f'В {pablic_info[0]["name"]} добавлено {response} типов')
+    pablic_logger.info(f"Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): добавлен паблик {pablic_info[0]['name']} с типами {response}")
 
 
 @bot.command()
-async def del_pablic(ctx, pablic_id, content_type=None):
+async def del_pablic(ctx: discord.ext.commands.context.Context, pablic_id, content_type=None):
     vk_session = vk_api.VkApi(token=vktoken)
     session_api = vk_session.get_api()
 
     pablic_info = session_api.groups.getById(group_id=int(pablic_id))
     response = pablicsObj.del_pablic(ctx.guild.id, pablic_id, content_type)
     await ctx.reply(f'С {pablic_info[0]["name"]} удалено {response} типов')
-    print(f'del {response}')
+    sound_logger.info(f'Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): с {pablic_info[0]["name"]} удалено {response} типов')
 
 
 @bot.command()
-async def show_pablics(ctx):
+async def show_pablics(ctx: discord.ext.commands.context.Context):
     response = pablicsObj.get_pablics(ctx.guild.id)
     if response == 0:
         await ctx.reply('На сервере нет пабликов для рассылки')
@@ -177,47 +236,56 @@ async def show_pablics(ctx):
 
 
 @bot.command()
-async def show_sounds(ctx):
+async def show_sounds(ctx: discord.ext.commands.context.Context):
     sound_obj = sounds.Sounds()
     sound_list = sound_obj.get_sounds(ctx.guild)
     if sound_list == 0 or len(sound_list) == 0:
         await ctx.reply('На сервере нет звуков')
+        sound_logger.info(
+            f'Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): на сервере нет звуков')
         return
     text_message = ''
     for i in range(len(sound_list)):
         text_message += str(i+1) + " " + sound_list[i] + '\n'
     await ctx.reply(text_message)
+    sound_logger.info(
+        f'Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): получил список звуков')
 
 
 @bot.command()
-async def add_sound(ctx):
+async def add_sound(ctx: discord.ext.commands.context.Context):
     # attachment_message = await bot.wait_for('message', check=lambda m: m.author == ctx.author and m.attachments)
     sound_obj = sounds.Sounds()
     if len(ctx.message.attachments) <= 0:
-        await ctx.reply('Прикрепи к сообщению с командой файлы')
+        await ctx.reply('Прикрепи к сообщению с командой файлы.')
         return
     response = sound_obj.add_sound(ctx.guild, ctx.message.attachments)
-    if len(response) <= 0:
-        await ctx.reply('Ни один файл не добавлен.\nФайл должен быть формата mp3')
-    else:
-        text_message = 'Добавлен(ы):'
-        for i in response:
-            text_message += '\n' + i
-        await ctx.reply(text_message)
+    if len(response) == 0:
+        await ctx.reply('Ни один файл не добавлен.\nФайл должен быть формата mp3, без специфических символов.')
+        return
+    text_message = 'Добавлен(ы):'
+    for i in response:
+        text_message += '\n' + i
+    sound_logger.info(f'Пользователь - {ctx.message.author.name} ({ctx.message.author.id}), сервер - {ctx.guild.name}/{ctx.channel.name} ({ctx.guild.id}/{ctx.channel.id}): {text_message}')
+    await ctx.reply(text_message)
 
 
 @bot.command()
-async def del_sound(ctx, name):
+async def del_sound(ctx: discord.ext.commands.context.Context, name: str):
     sound_obj = sounds.Sounds()
     response = sound_obj.del_sound(ctx.guild, name)
     text = ''
     match response:
         case 0:
             text = 'Такого звука нет на сервере'
+            sound_logger.info(f"Звука {name} нет в наличии, по запросу с сервера {ctx.guild.name} ({ctx.guild.id}), пользователь {ctx.message.author.name} ({ctx.message.author.id})")
         case 1:
             text = f"{name} удален с сервера"
+            sound_logger.info(f"Удален звук {name} с сервера {ctx.guild.name} ({ctx.guild.id}), пользователь {ctx.message.author.name} ({ctx.message.author.id})")
         case 2:
+
             text = "Индекс выходит за пределы"
+            sound_logger.info(f"Индекс выходит за пределы, сервер {ctx.guild.name} ({ctx.guild.id}), пользователь {ctx.message.author.name} ({ctx.message.author.id})")
 
     await ctx.reply(text)
 

@@ -2,8 +2,20 @@ import discord
 import asyncio
 import random
 import os
+import logging
 from os import walk
 from mutagen.mp3 import MP3
+
+logger_name = "voice_blast"
+logger = logging.getLogger(logger_name)
+logger.setLevel(logging.INFO)
+handler1 = logging.FileHandler(f"logs\{logger_name}.log", mode='a')
+handler2 = logging.StreamHandler()
+formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
+handler1.setFormatter(formatter)
+handler2.setFormatter(formatter)
+logger.addHandler(handler1)
+logger.addHandler(handler2)
 
 
 class VoiceBlast:
@@ -20,13 +32,15 @@ class VoiceBlast:
                 sounds.remove(sound)
         return sounds
 
-    async def voice_blasting(self, guild):
+    async def voice_blasting(self, guild: discord.Guild):
+        logger.info(f"Voice blasting has started at {guild.name} ({guild.id})")
         while True:
 
-            await asyncio.sleep(random.randint(2000, 12000))
-
+            #await asyncio.sleep(random.randint(2000, 10000))
+            await asyncio.sleep(random.randint(60, 240))
             if guild not in self.voice_blast_list:
-                print(f'At {guild.name} voice blacsting has stopped')
+
+                logger.info(f'Voice blasting has stopped at {guild.name} ({guild.id})')
                 return
 
             vc_channels = guild.voice_channels
@@ -52,11 +66,14 @@ class VoiceBlast:
                     channel = random.choice(channel_list)
                     voice = await channel.connect()
                     voice.play(discord.FFmpegPCMAudio(source=path))
-                    if duration > 30:
-                        await asyncio.sleep(30)
+
+                    logger.info(f"{sound} has played at {guild.name} ({guild.id})")
+                    max_time = 60
+                    if duration > max_time:
+                        await asyncio.sleep(max_time)
                     else:
-                        await asyncio.sleep(duration + 1)
+                        await asyncio.sleep(duration + 0.5)
                     await voice.disconnect()
                 except Exception as er:
-                    print('Error: ', er)
+                    logger.exception(f"VoiceBlastError: sound - \"{sound}\", server - \"{guild.name}\"")
 
